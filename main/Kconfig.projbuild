@@ -1,0 +1,10 @@
+menu "SUPPORT_ESP_MQTT configuration"
+
+config MY_WIFI_SSID
+    string "Wifi SSID"
+	default "AREA51"
+
+config MY_WIFI_PASSWORD
+    string "Wifi Password"
+	default "jupilerjupiler"	
+endmenu
