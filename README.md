@@ -1,3 +1,6 @@
+https://github.com/256dpi/esp-mqtt/issues/5
+https://github.com/pantaluna/support_esp_mqtt
+
 # 0. Environment
 - MCU: Adafruit HUZZAH32 ESP32 development board.
 - MCU: Wemos LOLIN32 Lite development board.
@@ -440,6 +443,10 @@ git push --set-upstream origin master
 
 git remote show origin
 git status
+
+git tag --annotate v1.0 --message "The original bug report"
+git push origin --tags
+
 ```
 
 # 2. SOP for source updates
@@ -448,6 +455,9 @@ cd  /c/myiot/esp/support_esp_mqtt
 git add .
 git commit -m "Another commit"
 git push --set-upstream origin master
+
+git tag --annotate v1.0 --message "The original bug report"
+git push origin --tags
 
 git status
 ```
