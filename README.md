@@ -79,7 +79,7 @@ git push --set-upstream origin master
 git status
 ```
 
-# esp-mqtt BUGFIX esp_lwmqtt.c (OK: released in v0.4.4)
+# 3. esp-mqtt BUGFIX esp_lwmqtt.c (OK: released in v0.4.4)
 void esp_lwmqtt_network_disconnect(esp_lwmqtt_network_t *network) {
   // immediately return if conn is not set
   if (network->conn == NULL) {
