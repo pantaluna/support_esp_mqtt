@@ -1,9 +1,10 @@
 /*
  *
  */
-#include "mjd_mjdlib.h"
-#include "esp_mqtt.h"
+#include "mjd.h"
 #include "mjd_wifi.h"
+
+#include "esp_mqtt.h"
 
 #include "lwip/err.h"
 #include "lwip/sockets.h"
@@ -27,10 +28,12 @@ char *WIFI_PASSWORD = CONFIG_MY_WIFI_PASSWORD;
 /*
  * MQTT
  */
-#define MQTT_HOST "broker.shiftr.io"
-#define MQTT_PORT 1883
-#define MQTT_USER "try"
-#define MQTT_PASS "try"
+#define MQTT_HOST ("broker.shiftr.io")
+#define MQTT_PORT ("1883")
+#define MQTT_USER ("try")
+#define MQTT_PASS ("try")
+#define MJD_MQTT_QOS_0 (0)
+#define MJD_MQTT_QOS_1 (1)
 
 static EventGroupHandle_t mqtt_event_group;
 static const int CONNECTED_BIT = BIT0;
@@ -50,7 +53,7 @@ static void mqtt_status_callback(esp_mqtt_status_t status) {
 }
 
 static void mqtt_message_callback(const char *topic, uint8_t *payload, size_t len) {
-    printf("subscription message received: topic=%s => payload=%s (%d)\n", topic, payload, (int) len);
+    printf("(not used in this prj) subscription message received: topic=%s => payload=%s (%d)\n", topic, payload, (int) len);
 }
 
 /*
@@ -61,9 +64,6 @@ static void mqtt_message_callback(const char *topic, uint8_t *payload, size_t le
  * MAIN
  */
 void app_main() {
-    int i;
-    int total;
-
     ESP_LOGI(TAG, "app_main() BEGIN");
 
     /* SOC init */
@@ -71,7 +71,7 @@ void app_main() {
     nvs_flash_init();
 
     /* MY STANDARD Init */
-    ESP_LOGI(TAG, "@doc Wait 3 seconds after power-on (let peripherals become active, e.g. meteo sensors!");
+    ESP_LOGI(TAG, "@doc Wait X seconds after power-on (start logic analyzer, let sensors to power-up");
     vTaskDelay(RTOS_DELAY_3SEC);
 
     /*
@@ -80,7 +80,7 @@ void app_main() {
     ESP_LOGI(TAG, "***SECTION: WIFI***");
     ESP_LOGI(TAG, "WIFI_SSID:     %s", WIFI_SSID);
     ESP_LOGI(TAG, "WIFI_PASSWORD: %s", WIFI_PASSWORD);
-    mjd_wifi_init(WIFI_SSID, WIFI_PASSWORD);
+    mjd_wifi_sta_init(WIFI_SSID, WIFI_PASSWORD);
 
     /*
      * MQTT
@@ -89,25 +89,38 @@ void app_main() {
     mqtt_event_group = xEventGroupCreate();
     esp_mqtt_init(mqtt_status_callback, mqtt_message_callback, 256, 2000);
 
-    total = 10;
-    i = 0;
-    ESP_LOGI(TAG, "MQTT + WIFI: start stop: %i times (@important it always asserts in the 2nd iteration of the LOOP", total);
-    while (++i <= total) {
-        ESP_LOGI(TAG, "\n\nMQTT: LOOP#%i of %i", i, total);
+    const char *payload = "payloadworld";
 
-        mjd_wifi_start();
+    ESP_LOGI(TAG, "WIFI+MQTT: start");
+    mjd_wifi_sta_start();
+    esp_mqtt_start(MQTT_HOST, MQTT_PORT, "support_esp_mqtt", MQTT_USER, MQTT_PASS);
+    xEventGroupWaitBits(mqtt_event_group, CONNECTED_BIT, false, true, portMAX_DELAY);
 
-        esp_mqtt_start(MQTT_HOST, MQTT_PORT, "mjd_components_test_main", MQTT_USER, MQTT_PASS);
-        xEventGroupWaitBits(mqtt_event_group, CONNECTED_BIT, false, true, portMAX_DELAY);
+    uint32_t nbr_of_errors = 0;
+    uint32_t total = 2500;
+    uint32_t j = 0;
+    ESP_LOGI(TAG, "MQTT + WIFI: start stop: %u times (@important it always asserts in the 2nd iteration of the LOOP", total);
+    while (++j <= total) {
+        ESP_LOGI(TAG, "\n\nMQTT: LOOP#%u of %u", j, total);
 
-        static const char *payload = "world";
-        ESP_LOGI(TAG, "MQTT: publishing: topic=hello => payload=%s (%d)\n", payload, (int) strlen(payload));
-        esp_mqtt_publish("hello", (void *) payload, (int) strlen(payload), 0, false);
+        ESP_LOGI(TAG, "MQTT: publishing: topic=hello => payload=%s (%u)", payload, (uint32_t) strlen(payload));
+        if (esp_mqtt_publish("topichello", (void *) payload, (uint32_t) strlen(payload), MJD_MQTT_QOS_1, false) != true) { // QOS 0 works...
+            ESP_LOGE(TAG, "mjd_mqtt_publish(): FAILED");
+            ++nbr_of_errors;
+            vTaskDelay(RTOS_DELAY_5SEC);
+        }
 
-        esp_mqtt_stop();
-
-        mjd_wifi_disconnect_stop();
+        // avoid triggered watchdog
+        vTaskDelay(RTOS_DELAY_1MILLISEC);
     }
+
+    ESP_LOGI(TAG, "WIFI+MQTT: stop");
+    esp_mqtt_stop();
+    mjd_wifi_sta_disconnect_stop();
+
+    // Report
+    ESP_LOGI(TAG, "REPORT");
+    ESP_LOGI(TAG, "  nbr_of_errors: %i", nbr_of_errors);
 
     /*
      * --END

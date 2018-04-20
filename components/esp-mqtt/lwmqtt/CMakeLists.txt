@@ -25,11 +25,15 @@ set(SOURCE_FILES
 
 add_library(lwmqtt ${SOURCE_FILES})
 
-set(EXAMPLE_FILES example/main.c)
 
-add_executable(example ${EXAMPLE_FILES})
+add_executable(example-sync examples/sync.c)
 
-target_link_libraries(example lwmqtt)
+target_link_libraries(example-sync lwmqtt)
+
+
+add_executable(example-async examples/async.c)
+
+target_link_libraries(example-async lwmqtt pthread)
 
 set(TEST_FILES
         tests/client.cpp

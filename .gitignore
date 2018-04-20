@@ -50,7 +50,7 @@ coverage_report/
 # ESP-IDF
 build
 
-# eclipse settings
+# Eclipse IDE settings
 .settings
 .cproject
 .project

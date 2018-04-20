@@ -453,11 +453,26 @@ git push origin --tags
 ```
 cd  /c/myiot/esp/support_esp_mqtt
 git add .
-git commit -m "Another commit"
+git commit -m "Testing v0.5.3"
 git push --set-upstream origin master
-
-git tag --annotate v1.0 --message "The original bug report"
-git push origin --tags
 
 git status
 ```
+
+# esp-mqtt BUGFIX esp_lwmqtt.c 
+void esp_lwmqtt_network_disconnect(esp_lwmqtt_network_t *network) {
+  // immediately return if conn is not set
+  if (network->conn == NULL) {
+    return;
+  }
+
+  // delete connection
+  netconn_delete(network->conn);
+
+  // BEGIN @bugfix https://github.com/256dpi/esp-mqtt/issues/5
+  // reset network
+    network->conn = NULL;
+    network->rest_buf = NULL;
+    network->rest_len = 0;
+  // END
+}

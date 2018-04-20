@@ -4,32 +4,21 @@
 #ifndef __MJD_WIFI_H__
 #define __MJD_WIFI_H__
 
-#include <float.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/event_groups.h"
-#include "freertos/task.h"
-
-#include "esp_clk.h"
-#include "esp_event_loop.h"
-#include "esp_log.h"
-#include "esp_spi_flash.h"
-#include "esp_system.h"
-#include "esp_wifi.h"
-
-#include "nvs_flash.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Function Declarations (public)
-void mjd_wifi_init(char *param_ssid, char *param_password);
-void mjd_wifi_start();
-void mjd_wifi_disconnect_stop();
+
+#include "esp_wifi.h"
+#include "lwip/netdb.h"
+
+// Function Declarations
+const char *mjd_wifi_reason_to_msg(uint8_t code);
+esp_err_t mjd_wifi_sta_init(const char *param_ssid, const char *param_password);
+esp_err_t mjd_wifi_sta_start();
+esp_err_t mjd_wifi_sta_disconnect_stop();
+bool mjd_wifi_sta_is_connected();
+
 
 #ifdef __cplusplus
 }

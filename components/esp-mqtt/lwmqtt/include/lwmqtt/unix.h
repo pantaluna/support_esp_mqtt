@@ -8,7 +8,9 @@
 /**
  * The UNIX timer object.
  */
-typedef struct { struct timeval end; } lwmqtt_unix_timer_t;
+typedef struct {
+  struct timeval end;
+} lwmqtt_unix_timer_t;
 
 /**
  * Callback to set the UNIX timer object.
@@ -27,7 +29,9 @@ int32_t lwmqtt_unix_timer_get(void *ref);
 /**
  * The UNIX network object.
  */
-typedef struct { int socket; } lwmqtt_unix_network_t;
+typedef struct {
+  int socket;
+} lwmqtt_unix_network_t;
 
 /**
  * Function to establish a UNIX network connection.
@@ -54,6 +58,16 @@ void lwmqtt_unix_network_disconnect(lwmqtt_unix_network_t *network);
  * @return An error value.
  */
 lwmqtt_err_t lwmqtt_unix_network_peek(lwmqtt_unix_network_t *network, size_t *available);
+
+/**
+ * Function to wait for a socket until data is available or the timeout has been reached.
+ *
+ * @param network - The network object.
+ * @param available  Variables that will be set with the status.
+ * @param timeout - The timeout.
+ * @return An error value.
+ */
+lwmqtt_err_t lwmqtt_unix_network_select(lwmqtt_unix_network_t *network, bool *available, uint32_t timeout);
 
 /**
  * Callback to read from a UNIX network connection.
