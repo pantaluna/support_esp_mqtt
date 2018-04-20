@@ -1,7 +1,7 @@
 https://github.com/256dpi/esp-mqtt/issues/5
 https://github.com/pantaluna/support_esp_mqtt
 
-# Problem: the second esp_mqtt_publish(QOS1) always fails with error "esp_mqtt: lwmqtt_yield: -4".
+# Problem v0.5.3: the second esp_mqtt_publish(QOS1) always fails with error "esp_mqtt: lwmqtt_yield: -4".
 @important This program uses esp_mqtt_publish(QOS1) - opposed to QOS0 which works fine all the time.
 
 # 1. Environment
@@ -37,7 +37,6 @@ W (7747) esp_mqtt: esp_mqtt_publish: not connected
 E (7747) myapp: mjd_mqtt_publish(): FAILED *****
 ...
 ```
-
 
 #.
 # APPENDICES
