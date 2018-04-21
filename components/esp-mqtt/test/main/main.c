@@ -1,7 +1,7 @@
 #include <stdlib.h>
-#include <string.h>
 
 #include <esp_event_loop.h>
+#include <esp_log.h>
 #include <esp_mqtt.h>
 #include <esp_wifi.h>
 #include <nvs_flash.h>
@@ -17,7 +17,7 @@
 static void process(void *p) {
   for (;;) {
     // publish roughly every second
-    esp_mqtt_publish("/hello", (uint8_t *)"world", 5, 0, false);
+    esp_mqtt_publish("/hello", (uint8_t *)"world", 5, 2, false);
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
@@ -62,7 +62,7 @@ static void status_callback(esp_mqtt_status_t status) {
   switch (status) {
     case ESP_MQTT_STATUS_CONNECTED:
       // subscribe
-      esp_mqtt_subscribe("/hello", 0);
+      esp_mqtt_subscribe("/hello", 2);
       break;
     case ESP_MQTT_STATUS_DISCONNECTED:
       // reconnect
@@ -72,7 +72,7 @@ static void status_callback(esp_mqtt_status_t status) {
 }
 
 static void message_callback(const char *topic, uint8_t *payload, size_t len) {
-  printf("incoming: %s => %s (%d)\n", topic, payload, (int)len);
+  ESP_LOGI("test", "incoming: %s => %s (%d)", topic, payload, (int)len);
 }
 
 void app_main() {

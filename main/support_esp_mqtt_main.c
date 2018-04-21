@@ -28,25 +28,26 @@ char *WIFI_PASSWORD = CONFIG_MY_WIFI_PASSWORD;
 /*
  * MQTT
  */
+#define MJD_MQTT_QOS_0 (0)
+#define MJD_MQTT_QOS_1 (1)
+
+#define MQTT_BUFFER_SIZE  (4096)  // @suggested 256 @used 4096 (max payload length)
+#define MQTT_TIMEOUT      (2000)  // @suggested 2000 @used 2000
+
 #define MQTT_HOST ("broker.shiftr.io")
 #define MQTT_PORT ("1883")
 #define MQTT_USER ("try")
 #define MQTT_PASS ("try")
-#define MJD_MQTT_QOS_0 (0)
-#define MJD_MQTT_QOS_1 (1)
 
 static EventGroupHandle_t mqtt_event_group;
 static const int CONNECTED_BIT = BIT0;
-static const int DISCONNECTED_BIT = BIT1;
 
 static void mqtt_status_callback(esp_mqtt_status_t status) {
     switch (status) {
     case ESP_MQTT_STATUS_CONNECTED:
         xEventGroupSetBits(mqtt_event_group, CONNECTED_BIT);
-        xEventGroupClearBits(mqtt_event_group, DISCONNECTED_BIT);
         break;
     case ESP_MQTT_STATUS_DISCONNECTED: // @todo This bitflag is not set when stopping mqtt...
-        xEventGroupSetBits(mqtt_event_group, DISCONNECTED_BIT);
         xEventGroupClearBits(mqtt_event_group, CONNECTED_BIT);
         break;
     }
@@ -87,7 +88,7 @@ void app_main() {
      */
     ESP_LOGI(TAG, "***SECTION: MQTT***");
     mqtt_event_group = xEventGroupCreate();
-    esp_mqtt_init(mqtt_status_callback, mqtt_message_callback, 256, 2000);
+    esp_mqtt_init(mqtt_status_callback, mqtt_message_callback, MQTT_BUFFER_SIZE, MQTT_TIMEOUT);
 
     const char *payload = "payloadworld";
 
@@ -105,7 +106,7 @@ void app_main() {
 
         ESP_LOGI(TAG, "MQTT: publishing: topic=hello => payload=%s (%u)", payload, (uint32_t) strlen(payload));
         if (esp_mqtt_publish("topichello", (void *) payload, (uint32_t) strlen(payload), MJD_MQTT_QOS_1, false) != true) { // QOS 0 works...
-            ESP_LOGE(TAG, "mjd_mqtt_publish(): FAILED");
+            ESP_LOGE(TAG, "esp_mqtt_publish(): FAILED");
             ++nbr_of_errors;
             vTaskDelay(RTOS_DELAY_5SEC);
         }
