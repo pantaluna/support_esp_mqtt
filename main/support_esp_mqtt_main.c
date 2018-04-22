@@ -57,15 +57,15 @@ char *WIFI_PASSWORD = CONFIG_MY_WIFI_PASSWORD;
 #define MY_MQTT_PASS "swiss"
 
 static EventGroupHandle_t mqtt_event_group;
-static const int CONNECTED_BIT = BIT0;
+static const int MQTT_CONNECTED_BIT = BIT0;
 
 static void mqtt_status_callback(esp_mqtt_status_t status) {
     switch (status) {
     case ESP_MQTT_STATUS_CONNECTED:
-        xEventGroupSetBits(mqtt_event_group, CONNECTED_BIT);
+        xEventGroupSetBits(mqtt_event_group, MQTT_CONNECTED_BIT);
         break;
-    case ESP_MQTT_STATUS_DISCONNECTED: // @todo This bitflag is not set when stopping mqtt...
-        xEventGroupClearBits(mqtt_event_group, CONNECTED_BIT);
+    case ESP_MQTT_STATUS_DISCONNECTED: // @doc This bitflag is not set when stopping mqtt...
+        xEventGroupClearBits(mqtt_event_group, MQTT_CONNECTED_BIT);
         break;
     }
 }
@@ -112,18 +112,18 @@ void main_task(void *pvParameter) {
 
      mjd_log_memory_statistics();
 
-     ESP_LOGI(TAG, "WIFI+MQTT: start");
-     mjd_wifi_sta_start();
-     esp_mqtt_start(MY_MQTT_HOST, MY_MQTT_PORT, "support_esp_mqtt", MY_MQTT_USER, MY_MQTT_PASS);
-     xEventGroupWaitBits(mqtt_event_group, CONNECTED_BIT, false, true, portMAX_DELAY);
-
-     ESP_LOGI(TAG, "MQTT info: LOOP %u times (@important it often asserts in the 2nd iteration of the LOOP using QOS1)", MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES);
+     ESP_LOGI(TAG, "MQTT info: LOOP %u times (@important it often asserts in the 2nd iteration of the LOOP)", MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES);
      ESP_LOGI(TAG, "MQTT info: esp_mqtt_publish: topic (len %u) => payload (len %u) ", (uint32_t) strlen(topic), (uint32_t) strlen(payload));
 
      uint32_t nbr_of_errors = 0;
      uint32_t j = 0;
      while (++j <= MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES) {
-         printf("#%u ", j); fflush(stdout);
+         printf("ITER#%u ", j); fflush(stdout);
+
+         ESP_LOGI(TAG, "WIFI+MQTT: start");
+         mjd_wifi_sta_start();
+         esp_mqtt_start(MY_MQTT_HOST, MY_MQTT_PORT, "support_esp_mqtt", MY_MQTT_USER, MY_MQTT_PASS);
+         xEventGroupWaitBits(mqtt_event_group, MQTT_CONNECTED_BIT, false, true, portMAX_DELAY);
 
          if (esp_mqtt_publish(topic, (void *) payload, (uint32_t) strlen(payload), MJD_MQTT_QOS_1, false) != true) { // QOS 0 works...
              ESP_LOGE(TAG, "esp_mqtt_publish(): FAILED");
@@ -131,14 +131,15 @@ void main_task(void *pvParameter) {
              vTaskDelay(RTOS_DELAY_5SEC);
          }
 
+         ESP_LOGI(TAG, "WIFI+MQTT: stop");
+         esp_mqtt_stop();
+         xEventGroupClearBits(mqtt_event_group, MQTT_CONNECTED_BIT); // @important You have to do this MANUALLY! @addfeature Await MQTT_STOPPED_BIT
+         mjd_wifi_sta_disconnect_stop();
+
          // avoid triggered watchdog
          vTaskDelay(RTOS_DELAY_1MILLISEC);
      }
      printf("\n\n");
-
-     ESP_LOGI(TAG, "WIFI+MQTT: stop");
-     esp_mqtt_stop();
-     mjd_wifi_sta_disconnect_stop();
 
      mjd_log_memory_statistics();
 
@@ -158,6 +159,10 @@ void app_main() {
     ESP_LOGD(TAG, "%s()", __FUNCTION__);
 
     mjd_log_memory_statistics();
+
+    // Production: skip less useless messages!
+    esp_log_level_set("wifi", ESP_LOG_WARN); // @important Disable INFO messages which are too detailed for me.
+    esp_log_level_set("tcpip_adapter", ESP_LOG_WARN); // @important Disable INFO messages which are too detailed for me.
 
     /**********
      * TASK:
