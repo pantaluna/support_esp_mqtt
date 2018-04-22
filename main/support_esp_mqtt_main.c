@@ -20,7 +20,7 @@ static const char TAG[] = "myapp";
 /*
  * FreeRTOS settings
  */
-#define MYAPP_RTOS_TASK_STACK_SIZE (8192)
+#define MYAPP_RTOS_TASK_STACK_SIZE_LARGE (8192)
 #define MYAPP_RTOS_TASK_PRIORITY_NORMAL (RTOS_TASK_PRIORITY_NORMAL)
 
 /*
@@ -110,19 +110,18 @@ void main_task(void *pvParameter) {
      char payload[MJD_LOOP_PAYLOAD_LENGTH + 1] = "";
      memset(payload, '-', MJD_LOOP_PAYLOAD_LENGTH);
 
+     mjd_log_memory_statistics();
+
      ESP_LOGI(TAG, "WIFI+MQTT: start");
      mjd_wifi_sta_start();
      esp_mqtt_start(MY_MQTT_HOST, MY_MQTT_PORT, "support_esp_mqtt", MY_MQTT_USER, MY_MQTT_PASS);
      xEventGroupWaitBits(mqtt_event_group, CONNECTED_BIT, false, true, portMAX_DELAY);
 
-     mjd_log_memory_statistics();
+     ESP_LOGI(TAG, "MQTT info: LOOP %u times (@important it often asserts in the 2nd iteration of the LOOP using QOS1)", MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES);
+     ESP_LOGI(TAG, "MQTT info: esp_mqtt_publish: topic (len %u) => payload (len %u) ", (uint32_t) strlen(topic), (uint32_t) strlen(payload));
 
      uint32_t nbr_of_errors = 0;
      uint32_t j = 0;
-
-     ESP_LOGI(TAG, "MQTT info: LOOP %u times (@important it often asserts in the 2nd iteration of the LOOP)", MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES);
-     ESP_LOGD(TAG, "MQTT info: esp_mqtt_publish: topic=(len %u) => payload=(len %u) ", (uint32_t) strlen(topic), (uint32_t) strlen(payload));
-
      while (++j <= MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES) {
          printf("#%u ", j); fflush(stdout);
 
@@ -135,13 +134,13 @@ void main_task(void *pvParameter) {
          // avoid triggered watchdog
          vTaskDelay(RTOS_DELAY_1MILLISEC);
      }
-     printf("\n");
-
-     mjd_log_memory_statistics();
+     printf("\n\n");
 
      ESP_LOGI(TAG, "WIFI+MQTT: stop");
      esp_mqtt_stop();
      mjd_wifi_sta_disconnect_stop();
+
+     mjd_log_memory_statistics();
 
      // Report
      ESP_LOGI(TAG, "REPORT: nbr_of_mqttpublish_errors: %i", nbr_of_errors);
@@ -165,13 +164,14 @@ void app_main() {
      * @important For stability (RMT + Wifi): always use xTaskCreatePinnedToCore(APP_CPU_NUM) [Opposed to xTaskCreate()]
      */
     BaseType_t xReturned;
-    xReturned = xTaskCreatePinnedToCore(&main_task, "main_task (name)", MYAPP_RTOS_TASK_STACK_SIZE, NULL,
+    xReturned = xTaskCreatePinnedToCore(&main_task, "main_task (name)", MYAPP_RTOS_TASK_STACK_SIZE_LARGE, NULL,
     MYAPP_RTOS_TASK_PRIORITY_NORMAL, NULL, APP_CPU_NUM);
     if (xReturned == pdPASS) {
         ESP_LOGI(TAG, "OK Task has been created, and is running right now");
     } else {
         ESP_LOGE(TAG, "ERROR Cannot create task!");
     }
+
     mjd_log_memory_statistics();
 
     ESP_LOGD(TAG, "%s() END", __FUNCTION__);
