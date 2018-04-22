@@ -42,6 +42,62 @@ E (7747) myapp: mjd_mqtt_publish(): FAILED *****
 # APPENDICES
 #.
 
+# 0. GET esp_mqtt from Github
+
+### INITIAL CLONE
+
+#MINGW>>
+mkdir --parents /c/myiot/esp/support_esp_mqtt/components
+cd              /c/myiot/esp/support_esp_mqtt/components
+
+git clone --recursive https://github.com/256dpi/esp-mqtt.git
+cd esp-mqtt
+git status
+
+### Checkout tag v0.5.4
+cd  /c/myiot/esp/support_esp_mqtt/components/esp-mqtt
+git pull
+git submodule update --init --recursive
+git status
+
+git tag --list
+git checkout tags/v0.5.4
+git describe --tags
+git submodule update --init --recursive
+git status
+
+### Checkout branch idf3
+cd  /c/myiot/esp/support_esp_mqtt/components/esp-mqtt
+git pull
+git submodule update --init --recursive
+git status
+
+git branch
+git checkout idf3
+git show-branch
+git submodule update --init --recursive
+git status
+
+
+# LWIP error codes
+typedef enum {
+  LWMQTT_SUCCESS = 0,
+  LWMQTT_BUFFER_TOO_SHORT = -1,
+  LWMQTT_VARNUM_OVERFLOW = -2,
+  LWMQTT_NETWORK_FAILED_CONNECT = -3,
+  LWMQTT_NETWORK_TIMEOUT = -4,
+  LWMQTT_NETWORK_FAILED_READ = -5,
+  LWMQTT_NETWORK_FAILED_WRITE = -6,
+  LWMQTT_REMAINING_LENGTH_OVERFLOW = -7,
+  LWMQTT_REMAINING_LENGTH_MISMATCH = -8,
+  LWMQTT_MISSING_OR_WRONG_PACKET = -9,
+  LWMQTT_CONNECTION_DENIED = -10,
+  LWMQTT_FAILED_SUBSCRIPTION = -11,
+  LWMQTT_SUBACK_ARRAY_OVERFLOW = -12,
+  LWMQTT_PONG_TIMEOUT = -13,
+} lwmqtt_err_t;
+
+
 # 1. SOP for upload to GITHUB
 https://github.com/pantaluna/support_esp_mqtt
 
