@@ -34,7 +34,7 @@ char *WIFI_PASSWORD = CONFIG_MY_WIFI_PASSWORD;
 /*
  * my loop settings
  */
-#define MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES (10000)
+#define MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES (3)
 #define MJD_LOOP_PAYLOAD_LENGTH (4000)
 
 /*
@@ -46,15 +46,15 @@ char *WIFI_PASSWORD = CONFIG_MY_WIFI_PASSWORD;
 #define MQTT_BUFFER_SIZE  (4096)  // @suggested 256 @used 4096 (>max payload length)
 #define MQTT_TIMEOUT      (2000)  // @suggested 2000 @used 2000
 
-/*#define MY_MQTT_HOST ("broker.shiftr.io")
+#define MY_MQTT_HOST ("broker.shiftr.io")
 #define MY_MQTT_PORT ("1883")
 #define MY_MQTT_USER ("try")
-#define MY_MQTT_PASS ("try")*/
+#define MY_MQTT_PASS ("try")
 
-#define MY_MQTT_HOST "192.168.0.95" // @important The DNS name "s3..." does not work on an MCU@LocalAN because it returns the ISP's WAN IP and this IP is not whitelisted in Ubuntu UFW!
+/*#define MY_MQTT_HOST "192.168.0.95" // @important The DNS name "s3..." does not work on an MCU@LocalAN because it returns the ISP's WAN IP and this IP is not whitelisted in Ubuntu UFW!
 #define MY_MQTT_PORT "12430"
 #define MY_MQTT_USER "zurich"
-#define MY_MQTT_PASS "swiss"
+#define MY_MQTT_PASS "swiss"*/
 
 static EventGroupHandle_t mqtt_event_group;
 static const int MQTT_CONNECTED_BIT = BIT0;
@@ -71,7 +71,7 @@ static void mqtt_status_callback(esp_mqtt_status_t status) {
 }
 
 static void mqtt_message_callback(const char *topic, uint8_t *payload, size_t len) {
-    printf("(not used in this prj) subscription message received: topic=%s => payload=%s (%d)\n", topic, payload, (int) len);
+    printf("(not used in this prj) subscription message received: topic=%s => payload(%d)=%s \n", topic, (int) len, payload);
 }
 
 /*
@@ -138,7 +138,7 @@ void main_task(void *pvParameter) {
 
          ESP_LOGI(TAG, "MQTT: stop");
          esp_mqtt_stop();
-         xEventGroupClearBits(mqtt_event_group, MQTT_CONNECTED_BIT); // @important You have to do this MANUALLY! @addfeature Await MQTT_STOPPED_BIT
+         xEventGroupClearBits(mqtt_event_group, MQTT_CONNECTED_BIT); // @important You have to do this MANUALLY. @suggestfeature Await MQTT_STOPPED_BIT
 
          // avoid triggered watchdog
          vTaskDelay(RTOS_DELAY_1MILLISEC);
