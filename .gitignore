@@ -1,56 +1,55 @@
-.config
-*.o
-*.pyc
+# V.A.
+_tmp/
+tmp/
+Thumbs.db
+*.diff
+*.err
+*.log
+*.orig
+*.rej
+*.swo
+*.swp
 
-# gtags
-GTAGS
-GRTAGS
-GPATH
-
-# emacs
+# Editors / emacs
 .dir-locals.el
-
-# emacs temp file suffixes
 *~
 .#*
 \#*#
+*.vi
 
 # MacOS directory files
-.DS_Store
+.DS_Store/
 
-# Example project files
-examples/**/sdkconfig
-examples/**/sdkconfig.old
-examples/**/build
+# SCSS-Lint
+scss-lint-report.xml
 
-#Doc build artifacts
-docs/_build/
-docs/doxygen-warning-log.txt
-docs/sphinx-warning-log.txt
-docs/sphinx-warning-log-sanitized.txt
-docs/xml/
-docs/man/
+# grunt-contrib-sass cache
+.sass-cache/
 
-# Unit test app files
-tools/unit-test-app/sdkconfig
-tools/unit-test-app/sdkconfig.old
-tools/unit-test-app/build
-tools/unit-test-app/builds
-tools/unit-test-app/output
+# Package Folders
+bower_components/
+node_modules/
 
-# AWS IoT Examples require device-specific certs/keys
-examples/protocols/aws_iot/*/main/certs/*.pem.*
+# Eclipse CDT C C++ / OS
+.cache/
+.idea/
+.settings/
+build
+.cproject
+.project
+.tmproj
+*.esproj
 
-# gcov coverage reports
+# GCC gcov coverage reports
 *.gcda
 *.gcno
 coverage.info
-coverage_report/
+coverage_report
 
-# ESP-IDF
-build
-
-# Eclipse IDE settings
-.settings
-.cproject
-.project
+# EDP-IDF
+cmake-build-debug/
+test/xtensa-esp32-elf
+test/esp-idf
+test/build
+sdkconfig
+sdkconfig.old

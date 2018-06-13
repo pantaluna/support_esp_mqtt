@@ -19,8 +19,8 @@ static EventGroupHandle_t wifi_event_group;
 static const int WIFI_CONNECTED_BIT = BIT0;
 static const int WIFI_DISCONNECTED_BIT = BIT1;
 
+static uint32_t total_nbr_of_first_connect_warnings = 0;
 static uint32_t total_nbr_of_fatal_connect_errors = 0;
-static uint32_t total_nbr_of_first_connect_errors = 0;
 
 ip4_addr_t ip;
 ip4_addr_t gw;
@@ -214,7 +214,7 @@ esp_err_t mjd_wifi_sta_start() {
     if ((uxBits & WIFI_CONNECTED_BIT) == 0) {
         ESP_LOGW(TAG, "FIRST TIME esp_wifi_start() failed to connect. Wait 15 seconds and try a 2nd time...");
 
-        ++total_nbr_of_first_connect_errors;
+        ++total_nbr_of_first_connect_warnings;
 
         f_retval = esp_wifi_stop();
         if (f_retval != ESP_OK) {
@@ -237,7 +237,7 @@ esp_err_t mjd_wifi_sta_start() {
             ++total_nbr_of_fatal_connect_errors;
 
             ESP_LOGE(TAG, "ERROR: SECOND TIME esp_wifi_start() failed to connect. => ABORT");
-            ESP_LOGI(TAG, "  @stats total_nbr_of_first_connect_errors (retried): %u", total_nbr_of_first_connect_errors);
+            ESP_LOGI(TAG, "  @stats total_nbr_of_first_connect_warnings (retried): %u", total_nbr_of_first_connect_warnings);
             ESP_LOGI(TAG, "  @stats total_nbr_of_fatal_connect_errors:           %u", total_nbr_of_fatal_connect_errors);
 
             f_retval = MJD_ERR_ESP_WIFI; // mark error code
@@ -250,8 +250,8 @@ esp_err_t mjd_wifi_sta_start() {
     ESP_LOGI(TAG, "  IP:       %s", inet_ntoa(ip));
     ESP_LOGI(TAG, "  Net mask: %s", inet_ntoa(msk));
     ESP_LOGI(TAG, "  Gateway:  %s", inet_ntoa(gw));
-    ESP_LOGI(TAG, "  @stats total_nbr_of_first_connect_errors (retried): %u", total_nbr_of_first_connect_errors);
-    ESP_LOGI(TAG, "  @stats total_nbr_of_fatal_connect_errors:           %u", total_nbr_of_fatal_connect_errors);
+    ESP_LOGI(TAG, "  @stats total_nbr_of_first_connect_warnings (retried): %u", total_nbr_of_first_connect_warnings);
+    ESP_LOGI(TAG, "  @stats total_nbr_of_fatal_connect_errors:             %u", total_nbr_of_fatal_connect_errors);
 
     // LABEL
     cleanup:;
@@ -292,8 +292,8 @@ esp_err_t mjd_wifi_sta_disconnect_stop() {
     }
 
     ESP_LOGI(TAG, "OK: WIFI disconnected!");
-    ESP_LOGI(TAG, "  @stats total_nbr_of_first_connect_errors (retried): %u", total_nbr_of_first_connect_errors);
-    ESP_LOGI(TAG, "  @stats total_nbr_of_fatal_connect_errors:           %u", total_nbr_of_fatal_connect_errors);
+    ESP_LOGI(TAG, "  @stats total_nbr_of_first_connect_warnings (retried): %u", total_nbr_of_first_connect_warnings);
+    ESP_LOGI(TAG, "  @stats total_nbr_of_fatal_connect_errors:             %u", total_nbr_of_fatal_connect_errors);
 
     // LABEL
     cleanup:;
@@ -303,7 +303,7 @@ esp_err_t mjd_wifi_sta_disconnect_stop() {
 
 bool mjd_wifi_sta_is_connected() {
     // @doc This function can be invoked even if mjd_wifi_sta is not yet init'd.
-    // @doc Check wifi_event_group is already init'd (!=NULL). If not then certainly no connection active, and cannot use xEventGroupWaitBits(wifi_event_group) at all)!
+    // @doc Check also that wifi_event_group is already init'd (!=NULL). If not then certainly no connection active, and cannot use xEventGroupWaitBits(wifi_event_group) at all)!
     ESP_LOGD(TAG, "%s()", __FUNCTION__);
 
     bool b_retval = true;

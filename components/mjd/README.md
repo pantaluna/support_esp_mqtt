@@ -1,3 +1,5 @@
 # ESP32 MJD Component
+This is a component based on ESP-IDF for the ESP32 hardware from Espressif.
 
-This is component based on ESP-IDF for ESP32 
+## Example ESP-IDF project
+mjd_components

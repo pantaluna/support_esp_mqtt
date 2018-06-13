@@ -97,7 +97,7 @@ esp_err_t mjd_word_to_binary_string(uint16_t input_word, char * output_string) {
     output_string[6] = (char) (input_word & 0b0000001000000000 ? '1' : '0');
     output_string[7] = (char) (input_word & 0b0000000100000000 ? '1' : '0');
     output_string[8] = (char) (input_word & 0b0000000010000000 ? '1' : '0');
-    output_string[9] = (char) (input_word &  0b0000000001000000 ? '1' : '0');
+    output_string[9] = (char) (input_word & 0b0000000001000000 ? '1' : '0');
     output_string[10] = (char) (input_word & 0b0000000000100000 ? '1' : '0');
     output_string[11] = (char) (input_word & 0b0000000000010000 ? '1' : '0');
     output_string[12] = (char) (input_word & 0b0000000000001000 ? '1' : '0');
@@ -133,6 +133,19 @@ bool mjd_string_ends_with(const char *str, const char *suffix) {
         return false;
     }
     return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
+}
+
+char * mjd_string_repeat(const char * s, int n) {
+    size_t slen = strlen(s);
+    char * dest = malloc(n * slen + 1);
+
+    int i;
+    char * p;
+    for (i = 0, p = dest; i < n; ++i, p += slen) {
+        memcpy(p, s, slen);
+    }
+    *p = '\0';
+    return dest;
 }
 
 /**********
@@ -205,7 +218,6 @@ void mjd_rtos_wait_forever() {
     }
 }
 
-
 /**********
  * ESP32 SYSTEM
  */
@@ -219,11 +231,10 @@ void mjd_log_chip_info() {
     esp_chip_info(&chip_info);
 
     ESP_LOGI(TAG, "  This is an ESP32 chip");
-    ESP_LOGI(TAG, "  APB clock frequency (Hz):    %d", esp_clk_apb_freq());
-
-    ESP_LOGI(TAG, "  CPU clock frequency (Hz):   %d", esp_clk_cpu_freq());
     ESP_LOGI(TAG, "  CPU cores:    %d", chip_info.cores);
     ESP_LOGI(TAG, "  Silicon rev.: %d", chip_info.revision);
+    ESP_LOGI(TAG, "  CPU clock frequency (Hz):   %d", esp_clk_cpu_freq());
+    ESP_LOGI(TAG, "  APB Advanced Peripheral Bus clock frequency (Hz):  %d", esp_clk_apb_freq());
     ESP_LOGI(TAG, "  Features:     %s%s%s", (chip_info.features & CHIP_FEATURE_WIFI_BGN) ? "WIFI" : "",
             (chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "", (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
     ESP_LOGI(TAG, "  Flash:        %dMB %s", spi_flash_get_chip_size() / 1024 / 1024,
@@ -240,42 +251,46 @@ void mjd_log_clanguage_details() {
     ESP_LOGI(TAG, "  __FUNCTION__: %s", __FUNCTION__);
 
     ESP_LOGI(TAG, "  char");
-    ESP_LOGI(TAG, "    Storage size for char: %d", sizeof(char));
+    ESP_LOGI(TAG, "    Storage size (bytes): %d", sizeof(char));
     ESP_LOGI(TAG, "    Number of bits in a char: %d", CHAR_BIT);
 
-    ESP_LOGI(TAG, "  uint32_t");
-    ESP_LOGI(TAG, "    Storage size for uint32_t: %u", sizeof(uint32_t));
-    ESP_LOGI(TAG, "    Minimum value: %i (unsigned always positive)", 0);
-    ESP_LOGI(TAG, "    Maximum value: %u", UINT_MAX);
+    // TODO @doc printf: uint8_t (%hhu) - uint16_t (%hu) - uint32_t (%u)
+
+    ESP_LOGI(TAG, "  uint8_t unsigned");
+    ESP_LOGI(TAG, "    Storage size (bytes): %u", sizeof(uint8_t));
+
+    ESP_LOGI(TAG, "  uint32_t unsigned");
+    ESP_LOGI(TAG, "    Storage size (bytes): %u", sizeof(uint32_t));
+    ESP_LOGI(TAG, "    Minimum value: 0 (unsigned = always positive)");
+    ESP_LOGI(TAG, "    UINT_MAX : %u", UINT_MAX);
 
     ESP_LOGI(TAG, "  int32_t");
-    ESP_LOGI(TAG, "    Storage size for int32_t: %u", sizeof(int32_t));
-    ESP_LOGI(TAG, "    Minimum value: %i", INT_MIN);
-    ESP_LOGI(TAG, "    Maximum value: %i", INT_MAX);
+    ESP_LOGI(TAG, "    Storage size (bytes) : %u", sizeof(int32_t));
+    ESP_LOGI(TAG, "    INT_MIN: %i", INT_MIN);
+    ESP_LOGI(TAG, "    INT_MAX: %i", INT_MAX);
+
+    ESP_LOGI(TAG, "  uint64_t unsigned: bounds, how to print");
+    ESP_LOGI(TAG, "    Storage size (bytes) : %u", sizeof(uint64_t));
+    uint64_t u64_min = 0ULL;
+    uint64_t u64_max = ULONG_LONG_MAX;
+    ESP_LOGI(TAG, "    u64_min [EXPECT 0]:                    %" PRIu64 " (0x%" PRIX64 ")", u64_min, u64_min);
+    ESP_LOGI(TAG, "    u64_max [EXPECT 18446744073709551615]: %" PRIu64 " (0x%" PRIX64 ")", u64_max, u64_max);
+
+    ESP_LOGI(TAG, "  int64_t: bounds, how to print");
+    ESP_LOGI(TAG, "    Storage size (bytes) : %u", sizeof(int64_t));
+    int64_t s64_min = (-1 * __LONG_LONG_MAX__) - 1;
+    int64_t s64_max = __LONG_LONG_MAX__; // 0x7FFFFFFFFFFFFFFFLL
+    ESP_LOGI(TAG, "     s64_min [EXPECT  -9223372036854775808]: %" PRIi64 " (0x%" PRIX64 ")", s64_min, s64_min);
+    ESP_LOGI(TAG, "     s64_max [EXPECT   9223372036854775807]: %" PRIi64 " (0x%" PRIX64 ")", s64_max, s64_max);
 
     ESP_LOGI(TAG, "  float");
-    ESP_LOGI(TAG, "    Storage size for float: %d", sizeof(float));
-    ESP_LOGI(TAG, "    Minimum positive value: %E", FLT_MIN);
-    ESP_LOGI(TAG, "    Maximum positive value: %E", FLT_MAX);
-    ESP_LOGI(TAG, "    Precision value: %d", FLT_DIG);
-
-    ESP_LOGI(TAG, "  64 bit unsigned integers: lower bound, upper bound and how to print");
-    uint64_t u64_min  = 0ULL;
-    uint64_t u64_max  = ULONG_LONG_MAX;
-    ESP_LOGI(TAG, "    uint64_t u64_min [EXPECT 0]:                    %" PRIu64 " (0x%" PRIX64 ")", u64_min, u64_min);
-    ESP_LOGI(TAG, "    uint64_t u64_max [EXPECT 18446744073709551615]: %" PRIu64 " (0x%" PRIX64 ")", u64_max, u64_max);
-
-    ESP_LOGI(TAG, "  64 bit signed integers: lower bound, upper bound and how to print");
-    int64_t s64_min  = (-1 * __LONG_LONG_MAX__) - 1;
-    int64_t s64_max  = __LONG_LONG_MAX__; // 0x7FFFFFFFFFFFFFFFLL
-    ESP_LOGI(TAG, "    int64_t s64_min [EXPECT  -9223372036854775808]: %" PRIi64 " (0x%" PRIX64 ")", s64_min, s64_min);
-    ESP_LOGI(TAG, "    int64_t s64_max [EXPECT   9223372036854775807]: %" PRIi64 " (0x%" PRIX64 ")", s64_max, s64_max);
+    ESP_LOGI(TAG, "    Storage size (bytes): %d", sizeof(float));
+    ESP_LOGI(TAG, "    FLT_MIN positive value: %E", FLT_MIN);
+    ESP_LOGI(TAG, "    FLT_MAX maximum positive value: %E", FLT_MAX);
+    ESP_LOGI(TAG, "    FLT_DIG precision value: %d", FLT_DIG);
 
     ESP_LOGI(TAG, "");
 }
-
-
-
 
 void mjd_log_memory_statistics() {
     ESP_LOGD(TAG, "%s()", __FUNCTION__);
@@ -324,7 +339,7 @@ void mjd_log_wakeup_details() {
      ESP_SLEEP_WAKEUP_TOUCHPAD,     //! Wakeup caused by touchpad
      ESP_SLEEP_WAKEUP_ULP,          //! Wakeup caused by ULP program
      */
-    char wakeup_reason[20];
+    char wakeup_reason[128];
 
     switch (esp_sleep_get_wakeup_cause()) {
     case ESP_SLEEP_WAKEUP_EXT0:
@@ -348,7 +363,7 @@ void mjd_log_wakeup_details() {
         break;
 
     default:
-        strcpy(wakeup_reason, "UNKNOWN");
+        strcpy(wakeup_reason, "UNKNOWN (woke up but not after a deep sleep period)");
         break;
     }
 

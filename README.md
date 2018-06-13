@@ -1,7 +1,7 @@
 https://github.com/256dpi/esp-mqtt/
 https://github.com/pantaluna/support_esp_mqtt
 
-# Problem branch idf3 and tag v0.5.3: the 2nd esp_mqtt_publish(QOS1) always fails with error "esp_mqtt: lwmqtt_yield: -4".
+# Problem branch ESP-IDF V3 and esp-mqtt tag v0.6.0: the 2nd esp_mqtt_publish(QOS1) always fails with error "esp_mqtt: lwmqtt_yield: -4".
 @important This program uses esp_mqtt_publish(QOS1) - opposed to QOS0 which works fine all the time.
 
 # 1. Environment
@@ -66,17 +66,18 @@ git describe --tags
 git submodule update --init --recursive
 git status
 
-### Checkout branch idf3
+### Checkout tag v0.6.0
 cd  /c/myiot/esp/support_esp_mqtt/components/esp-mqtt
 git pull
 git submodule update --init --recursive
 git status
 
-git branch
-git checkout idf3
-git show-branch
+git tag --list
+git checkout tags/v0.6.0
+git describe --tags
 git submodule update --init --recursive
 git status
+
 
 
 # LWIP error codes
@@ -128,7 +129,7 @@ git push origin --tags
 ```
 cd  /c/myiot/esp/support_esp_mqtt
 git add .
-git commit -m "Testing branch idf3"
+git commit -m "Testing git tag v0.6.0"
 git push --set-upstream origin master
 
 git status

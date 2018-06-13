@@ -13,6 +13,12 @@
 #include "lwip/dns.h"
 
 /*
+ * LOOP Settings
+ */
+#define MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES (100000)
+#define MJD_LOOP_PAYLOAD_LENGTH (4000)
+
+/*
  * Logging
  */
 static const char TAG[] = "myapp";
@@ -32,12 +38,6 @@ char *WIFI_SSID = CONFIG_MY_WIFI_SSID;
 char *WIFI_PASSWORD = CONFIG_MY_WIFI_PASSWORD;
 
 /*
- * my loop settings
- */
-#define MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES (3)
-#define MJD_LOOP_PAYLOAD_LENGTH (4000)
-
-/*
  * MQTT
  */
 #define MJD_MQTT_QOS_0 (0)
@@ -46,15 +46,17 @@ char *WIFI_PASSWORD = CONFIG_MY_WIFI_PASSWORD;
 #define MQTT_BUFFER_SIZE  (4096)  // @suggested 256 @used 4096 (>max payload length)
 #define MQTT_TIMEOUT      (2000)  // @suggested 2000 @used 2000
 
-#define MY_MQTT_HOST ("broker.shiftr.io")
-#define MY_MQTT_PORT ("1883")
-#define MY_MQTT_USER ("try")
-#define MY_MQTT_PASS ("try")
+/*
+ #define MY_MQTT_HOST ("broker.shiftr.io")
+ #define MY_MQTT_PORT ("1883")
+ #define MY_MQTT_USER ("try")
+ #define MY_MQTT_PASS ("try")
+ */
 
-/*#define MY_MQTT_HOST "192.168.0.95" // @important The DNS name "s3..." does not work on an MCU@LocalAN because it returns the ISP's WAN IP and this IP is not whitelisted in Ubuntu UFW!
-#define MY_MQTT_PORT "12430"
-#define MY_MQTT_USER "zurich"
-#define MY_MQTT_PASS "swiss"*/
+#define MY_MQTT_HOST ("192.168.0.95") // @important The DNS name "s3..." does not work on an MCU@LocalAN because it returns the ISP's WAN IP and this IP is not whitelisted in Ubuntu UFW!
+#define MY_MQTT_PORT ("12430")
+#define MY_MQTT_USER ("zurich")
+#define MY_MQTT_PASS ("swiss")
 
 static EventGroupHandle_t mqtt_event_group;
 static const int MQTT_CONNECTED_BIT = BIT0;
@@ -78,89 +80,94 @@ static void mqtt_message_callback(const char *topic, uint8_t *payload, size_t le
  * TASK
  */
 void main_task(void *pvParameter) {
-     ESP_LOGD(TAG, "%s()", __FUNCTION__);
+    ESP_LOGD(TAG, "%s()", __FUNCTION__);
 
-     mjd_log_memory_statistics();
+    mjd_log_memory_statistics();
 
-     /* SOC init */
-     ESP_LOGI(TAG, "@doc exec nvs_flash_init() - mandatory for Wifi to work later on");
-     nvs_flash_init();
+    /* SOC init */
+    ESP_LOGI(TAG, "@doc exec nvs_flash_init() - mandatory for Wifi to work later on");
+    nvs_flash_init();
 
-     /* MY STANDARD Init */
-     ESP_LOGI(TAG, "@doc Wait X seconds after power-on (start logic analyzer, let sensors power-up)");
-     vTaskDelay(RTOS_DELAY_1MILLISEC);
+    /* MY STANDARD Init */
+    ESP_LOGI(TAG, "@doc Wait X seconds after power-on (start logic analyzer, let sensors power-up)");
+    vTaskDelay(RTOS_DELAY_1MILLISEC);
 
-     /*
-      * WIFI
-      */
-     ESP_LOGI(TAG, "***SECTION: WIFI***");
-     ESP_LOGI(TAG, "WIFI_SSID:     %s", WIFI_SSID);
-     ESP_LOGI(TAG, "WIFI_PASSWORD: %s", WIFI_PASSWORD);
-     mjd_wifi_sta_init(WIFI_SSID, WIFI_PASSWORD);
+    /*
+     * WIFI
+     */
+    ESP_LOGI(TAG, "***SECTION: WIFI***");
+    ESP_LOGI(TAG, "WIFI_SSID:     %s", WIFI_SSID);
+    ESP_LOGI(TAG, "WIFI_PASSWORD: %s", WIFI_PASSWORD);
+    mjd_wifi_sta_init(WIFI_SSID, WIFI_PASSWORD);
 
-     /*
-      * MQTT
-      */
-     ESP_LOGI(TAG, "***SECTION: MQTT***");
-     mqtt_event_group = xEventGroupCreate();
-     esp_mqtt_init(mqtt_status_callback, mqtt_message_callback, MQTT_BUFFER_SIZE, MQTT_TIMEOUT);
+    /*
+     * MQTT
+     */
+    ESP_LOGI(TAG, "***SECTION: MQTT***");
+    mqtt_event_group = xEventGroupCreate();
+    esp_mqtt_init(mqtt_status_callback, mqtt_message_callback, MQTT_BUFFER_SIZE, MQTT_TIMEOUT);
 
-     char topic[] = "hello";
+    char topic[] = "hello";
 
-     char payload[MJD_LOOP_PAYLOAD_LENGTH + 1] = "";
-     memset(payload, '-', MJD_LOOP_PAYLOAD_LENGTH);
+    char payload[MJD_LOOP_PAYLOAD_LENGTH + 1] = "";
+    memset(payload, '-', MJD_LOOP_PAYLOAD_LENGTH);
 
-     mjd_log_memory_statistics();
+    mjd_log_memory_statistics();
 
-     ESP_LOGI(TAG, "WIFI: start");
-     mjd_wifi_sta_start();
+    ESP_LOGI(TAG, "WIFI: start");
+    mjd_wifi_sta_start();
 
-     mjd_log_memory_statistics();
+    ESP_LOGI(TAG, "MQTT: start");
+    esp_mqtt_start(MY_MQTT_HOST, MY_MQTT_PORT, "support_esp_mqtt", MY_MQTT_USER, MY_MQTT_PASS);
+    xEventGroupWaitBits(mqtt_event_group, MQTT_CONNECTED_BIT, false, true, portMAX_DELAY);
 
-     ESP_LOGI(TAG, "MQTT info: LOOP %u times (@important it often asserts in the 2nd iteration of the LOOP)", MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES);
-     ESP_LOGI(TAG, "MQTT info: esp_mqtt_publish: topic (len %u) => payload (len %u) ", (uint32_t) strlen(topic), (uint32_t) strlen(payload));
+    mjd_log_memory_statistics();
 
-     uint32_t nbr_of_errors = 0;
-     uint32_t j = 0;
-     while (++j <= MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES) {
-         printf("ITER#%u ", j); fflush(stdout);
+    ESP_LOGI(TAG, "MQTT info: LOOP %u times (@important it often asserts in the 2nd iteration of the LOOP)",
+            MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES);
+    ESP_LOGI(TAG, "MQTT info: esp_mqtt_publish: topic (len %u) => payload (len %u) ", (uint32_t ) strlen(topic),
+            (uint32_t ) strlen(payload));
 
-         ESP_LOGI(TAG, "MQTT: start");
-         esp_mqtt_start(MY_MQTT_HOST, MY_MQTT_PORT, "support_esp_mqtt", MY_MQTT_USER, MY_MQTT_PASS);
-         xEventGroupWaitBits(mqtt_event_group, MQTT_CONNECTED_BIT, false, true, portMAX_DELAY);
+    uint32_t nbr_of_errors = 0;
+    uint32_t j = 0;
+    while (++j <= MJD_LOOP_NBR_OF_PUBLISHED_MESSAGES) {
+        printf("ITER#%u ", j);
+        fflush(stdout);
 
-         ESP_LOGI(TAG, "MQTT: publish");
-         if (esp_mqtt_publish(topic, (void *) payload, (uint32_t) strlen(payload), MJD_MQTT_QOS_1, false) != true) { // QOS 0 works...
-             ESP_LOGE(TAG, "esp_mqtt_publish(): FAILED");
-             ++nbr_of_errors;
-             vTaskDelay(RTOS_DELAY_5SEC);
-         }
+        ESP_LOGI(TAG, "MQTT: publish");
+        if (esp_mqtt_publish(topic, (void *) payload, (uint32_t) strlen(payload), MJD_MQTT_QOS_1, false) != true) { // @important QOS 0 works... | MJD_MQTT_QOS_0 MJD_MQTT_QOS_1
+            ESP_LOGE(TAG, "esp_mqtt_publish(): FAILED");
+            ++nbr_of_errors;
+            vTaskDelay(RTOS_DELAY_5SEC);
+        }
 
-         ESP_LOGI(TAG, "MQTT: stop");
-         esp_mqtt_stop();
-         xEventGroupClearBits(mqtt_event_group, MQTT_CONNECTED_BIT); // @important You have to do this MANUALLY. @suggestfeature Await MQTT_STOPPED_BIT
+        /////mjd_log_memory_statistics();
 
-         // avoid triggered watchdog
-         vTaskDelay(RTOS_DELAY_1MILLISEC);
-     }
-     printf("\n\n");
+        // Avoid ESP-IDF watchdog being triggered
+        vTaskDelay(RTOS_DELAY_1MILLISEC);
+    }
+    printf("\n\n");
 
-     mjd_log_memory_statistics();
+    mjd_log_memory_statistics();
 
-     ESP_LOGI(TAG, "WIFI: stop");
-     mjd_wifi_sta_disconnect_stop();
+    ESP_LOGI(TAG, "MQTT: stop");
+    esp_mqtt_stop();
+    xEventGroupClearBits(mqtt_event_group, MQTT_CONNECTED_BIT); // @important You have to do this MANUALLY. @suggestfeature Await MQTT_STOPPED_BIT
 
-     mjd_log_memory_statistics();
+    ESP_LOGI(TAG, "WIFI: stop");
+    mjd_wifi_sta_disconnect_stop();
 
-     // Report
-     ESP_LOGI(TAG, "REPORT: nbr_of_mqttpublish_errors: %i", nbr_of_errors);
+    mjd_log_memory_statistics();
 
-     /********************************************************************************
-      * Task Delete
-      * @doc Passing NULL will end the current task
-      */
-     vTaskDelete(NULL);
- }
+    // Report
+    ESP_LOGI(TAG, "REPORT: nbr_of_mqttpublish_errors: %i", nbr_of_errors);
+
+    /********************************************************************************
+     * Task Delete
+     * @doc Passing NULL will end the current task
+     */
+    vTaskDelete(NULL);
+}
 /*
  * MAIN
  */
